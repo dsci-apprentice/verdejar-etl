@@ -1,6 +1,27 @@
+# ambiente virtual
 .venv/
+venv/
+
+# cache do python
 __pycache__/
-*.pyc
+*.py[cod]
+
+# testes
 .pytest_cache/
-brutos/
+
+# configurações locais e credenciais
 .env
+.env.*
+
+# exceção para arquivo de exemplo
+!.env.example
+
+# dados brutos e bancos locais
+brutos/
+*.db
+*.sqlite
+*.sqlite3
+
+# arquivos temporários
+*.tmp
+*.log
