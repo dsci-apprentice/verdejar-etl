@@ -1,3 +1,4 @@
+from datetime import datetime
 from pathlib import Path
 import csv
 import importlib.util
@@ -8,6 +9,19 @@ DB_PATH = BASE_DIR / "verdejar.db"
 BRUTOS_DIR = BASE_DIR / "brutos"
 TRANSFORMAR_PATH = BASE_DIR / "03_transformar.py"
 RELATORIO_PATH = BASE_DIR / "auditoria_verdejar.md"
+QUALIDADE_CSV_PATH = BASE_DIR / "relatorio_qualidade.csv"
+
+COLUNAS_QUALIDADE = [
+    "executado_em",
+    "pedidos_duplicados_descartados",
+    "violacoes_fk",
+    "estados_invalidos",
+    "datas_clientes_invalidas",
+    "datas_pedidos_invalidas",
+    "emails_nulos",
+    "pedidos_divergentes",
+    "divergencias_soma",
+]
 
 
 def carregar_modulo_transformar():
@@ -222,6 +236,34 @@ def montar_relatorio_markdown(
     return "\n".join(linhas)
 
 
+def anexar_relatorio_qualidade_csv(
+    caminho_csv: Path,
+    integridade: dict[str, int],
+    financeiro: dict,
+    reconciliacao: dict,
+) -> None:
+    escrever_cabecalho = (not caminho_csv.exists()) or caminho_csv.stat().st_size == 0
+    executado_em = datetime.now().astimezone().isoformat()
+
+    linha = {
+        "executado_em": executado_em,
+        "pedidos_duplicados_descartados": int(reconciliacao["pedidos_duplicados_descartados"]),
+        "violacoes_fk": int(integridade["violacoes_fk"]),
+        "estados_invalidos": int(integridade["estados_invalidos"]),
+        "datas_clientes_invalidas": int(integridade["datas_clientes_invalidas"]),
+        "datas_pedidos_invalidas": int(integridade["datas_pedidos_invalidas"]),
+        "emails_nulos": int(integridade["emails_nulos"]),
+        "pedidos_divergentes": int(financeiro["pedidos_divergentes"]),
+        "divergencias_soma": int(financeiro["divergencias_soma"]),
+    }
+
+    with caminho_csv.open("a", encoding="utf-8", newline="") as arq:
+        escritor = csv.DictWriter(arq, fieldnames=COLUNAS_QUALIDADE)
+        if escrever_cabecalho:
+            escritor.writeheader()
+        escritor.writerow(linha)
+
+
 def main() -> None:
     try:
         conn = abrir_conexao_somente_leitura(DB_PATH)
@@ -237,11 +279,17 @@ def main() -> None:
             contagens, integridade, financeiro, reconciliacao
         )
         RELATORIO_PATH.write_text(conteudo, encoding="utf-8")
+        anexar_relatorio_qualidade_csv(
+            QUALIDADE_CSV_PATH, integridade, financeiro, reconciliacao
+        )
     except (FileNotFoundError, RuntimeError, OSError, ValueError, sqlite3.Error) as exc:
         print(f"erro na auditoria: {exc}")
         raise SystemExit(1) from exc
 
-    print(f"Auditoria concluída. Relatório gerado em: {RELATORIO_PATH}")
+    print(
+        f"Auditoria concluída. Relatório gerado em: {RELATORIO_PATH} | "
+        f"Qualidade CSV atualizado em: {QUALIDADE_CSV_PATH}"
+    )
 
 
 if __name__ == "__main__":
