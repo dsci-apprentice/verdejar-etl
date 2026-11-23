@@ -1,0 +1,3 @@
+executado_em,pedidos_duplicados_descartados,violacoes_fk,estados_invalidos,datas_clientes_invalidas,datas_pedidos_invalidas,emails_nulos,pedidos_divergentes,divergencias_soma
+2026-11-23T19:27:30.315091-04:00,100,0,0,0,0,81,238,0
+2026-11-23T19:29:43.784462-04:00,100,0,0,0,0,81,238,0
